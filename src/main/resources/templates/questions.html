@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bài Trắc Nghiệm</title>
+  <title th:text="${nameExam} + ' - Bài Trắc Nghiệm'">Bài Trắc Nghiệm</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
   <style>
@@ -52,11 +52,32 @@
       from { opacity: 0; }
       to { opacity: 1; }
     }
+    #question-nav {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background-color: #fff;
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      z-index: 1000;
+    }
+    #question-nav button {
+      display: block;
+      margin: 5px 0;
+      padding: 5px 10px;
+      background-color: #6c63ff;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    #question-nav button:hover {
+      background-color: #5a54cc;
+    }
   </style>
 </head>
-<body th:data-user-id="${idUser}" th:data-exam-id="${idExam}">
-<!--<h1>ID Người Dùng: <span th:text="${idUser}"></span></h1>-->
-<!--<h2>ID Bài Thi: <span th:text="${idExam}"></span></h2>-->
+<body th:data-user-id="${idUser}" th:data-exam-id="${idExam}" th:data-user-name="${username}">
 <div class="container mt-5">
   <div class="row">
     <div class="col-2 text-start">
@@ -65,19 +86,16 @@
       </button>
     </div>
     <div class="col-8">
+      <h1 class="quiz-title text-center mb-4" style="color: #6c63ff;" th:text="${nameExam} ?: 'Làm Bài Trắc Nghiệm'">Làm Bài Trắc Nghiệm</h1>
       <div class="quiz-container">
         <div class="text-center mb-4">
           <h2 style="color: #6c63ff;">Làm Bài Trắc Nghiệm</h2>
           <div id="timer" class="text-center">20:00</div>
         </div>
 
-        <div th:each="question : ${questions}" class="card mb-3 question-card" th:attr="data-question-id=${question.idQuestion}">
-
-
+        <div th:each="question, stat : ${questions}" class="card mb-3 question-card" th:attr="data-question-id=${question.idQuestion}">
           <div class="card-body">
             <h5 class="card-title" th:text="${question.question}">Câu hỏi</h5>
-
-
             <div class="row">
               <div class="col-md-6 mb-2">
                 <button class="btn btn-outline-primary btn-answer w-100"
@@ -100,7 +118,6 @@
                         th:text="'D: ' + ${question.answer4}"></button>
               </div>
             </div>
-
             <div class="result-text" style="display:none;"></div>
             <input type="hidden" class="correct-answer" th:value="${question.correctAnswer}">
           </div>
@@ -115,12 +132,17 @@
   </div>
 </div>
 
+<div id="question-nav"></div>
+
 <script>
-  // Timer functionality
-  let timeLeft = 20 * 60; // 20 minutes
+  // Initialize timer
+  let timeLeft = 20 * 60; // 20 minutes in seconds
   const timerDisplay = document.getElementById('timer');
   const backButton = document.getElementById('backButton');
+  const selectedAnswers = {};
+  const questionNav = document.getElementById('question-nav');
 
+  // Timer function
   const timerInterval = setInterval(() => {
     const minutes = Math.floor(timeLeft / 60);
     const seconds = timeLeft % 60;
@@ -133,41 +155,38 @@
     timeLeft--;
   }, 1000);
 
-  // Back button functionality
+  // Back button handler
   backButton.addEventListener('click', () => {
     if (confirm('Bạn có chắc muốn quay lại? Những câu trả lời của bạn sẽ không được lưu.')) {
-      window.location.href = '/'; // Adjust this to your actual back route
+      window.location.href = '/kiemtra';
     }
   });
 
-  // Previous answer selection logic remains the same
-  const selectedAnswers = {};
-
+  // Answer selection
   document.querySelectorAll('.btn-answer').forEach(button => {
     button.addEventListener('click', function() {
       const questionCard = this.closest('.question-card');
       const questionId = questionCard.getAttribute('data-question-id');
 
-      questionCard.querySelectorAll('.btn-answer').forEach(btn => {
-        btn.classList.remove('selected');
-      });
+      // Remove 'selected' class from all buttons in the same question
+      questionCard.querySelectorAll('.btn-answer').forEach(btn => btn.classList.remove('selected'));
 
+      // Add 'selected' class to clicked button
       this.classList.add('selected');
       selectedAnswers[questionId] = this.getAttribute('data-answer');
     });
   });
 
+  // Submit answers and show results
   function submitAnswers() {
     clearInterval(timerInterval); // Stop timer
     let correctCount = 0;
     const totalQuestions = document.querySelectorAll('.question-card').length;
 
-    const answersData = [];
     document.querySelectorAll('.question-card').forEach(questionCard => {
       const questionId = questionCard.getAttribute('data-question-id');
       const correctAnswer = questionCard.querySelector('.correct-answer').value;
       const resultText = questionCard.querySelector('.result-text');
-      const buttons = questionCard.querySelectorAll('.btn-answer');
 
       if (selectedAnswers[questionId]) {
         if (selectedAnswers[questionId] === correctAnswer) {
@@ -179,54 +198,34 @@
           resultText.classList.add('incorrect');
         }
         resultText.style.display = 'block';
+      } else {
+        resultText.innerHTML = `Chưa chọn! Đáp án đúng là ${correctAnswer}.`;
+        resultText.classList.add('incorrect');
+        resultText.style.display = 'block';
       }
-
-      answersData.push({
-        questionId: questionId,
-        selectedAnswer: selectedAnswers[questionId] || null,
-        correctAnswer: correctAnswer
-      });
     });
 
     const scorePercentage = Math.round((correctCount / totalQuestions) * 100);
     alert(`Bạn đúng ${correctCount}/${totalQuestions} câu. Điểm số: ${scorePercentage}%`);
-
-    // Sau khi bấm OK, gửi dữ liệu lên backend
-    if (confirm('Bạn có muốn lưu kết quả bài làm không?')) {
-      const userId = document.body.getAttribute('data-user-id'); // ID người dùng
-      const examId = document.body.getAttribute('data-exam-id'); // ID bài kiểm tra
-      const score = scorePercentage; // Điểm số
-
-      // Gửi dữ liệu lên backend
-      fetch('/make-exam', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: userId,  // ID người dùng
-          examId: examId,  // ID bài kiểm tra
-          result: scorePercentage
-        })
-      })
-              .then(response => response.json())
-              .then(data => {
-                if (data.success) {
-                  alert('Kết quả đã được lưu thành công!');
-                  // Sau khi lưu thành công, chuyển hướng về trang chính
-                  // Điều hướng về trang chính hoặc trang khác
-                } else {
-                  alert('Lưu kết quả thất bại. Vui lòng thử lại.');
-                }
-              })
-              .catch(error => {
-                console.error('Lỗi:', error);
-                alert('Có lỗi xảy ra khi gửi dữ liệu. Vui lòng thử lại.');
-              });
-    }
   }
 
+  // Generate question navigation buttons
+  window.onload = () => {
+    generateQuestionNav();
 
-
-
+    function generateQuestionNav() {
+      const questionCards = document.querySelectorAll('.question-card');
+      questionNav.innerHTML = ''; // Clear existing buttons
+      questionCards.forEach((card, index) => {
+        const button = document.createElement('button');
+        button.textContent = index + 1;
+        button.addEventListener('click', () => {
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+        questionNav.appendChild(button);
+      });
+    }
+  };
 </script>
 </body>
 </html>

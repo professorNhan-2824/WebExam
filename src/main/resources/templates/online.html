@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="${nameExam} + ' - Bài Trắc Nghiệm'">Bài Trắc Nghiệm</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f4f6f9;
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .quiz-container {
+      background-color: white;
+      border-radius: 15px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      padding: 30px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .btn-answer {
+      margin: 5px;
+      transition: all 0.3s ease;
+    }
+
+    .btn-answer.selected {
+      background-color: #6c63ff !important;
+      color: white !important;
+      transform: scale(1.05);
+    }
+
+    #timer {
+      font-size: 1.5rem;
+      color: #6c63ff;
+      font-weight: bold;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .quiz-title {
+      font-size: 2.5rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      color: #6c63ff;
+    }
+
+    .fullscreen-warning {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0, 0, 0, 0.95);
+      z-index: 9999;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      text-align: center;
+      font-size: 24px;
+    }
+
+    .warning-content {
+      background-color: #dc3545;
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      max-width: 500px;
+      width: 90%;
+    }
+
+    .countdown {
+      font-size: 60px;
+      font-weight: bold;
+      color: #fff;
+      margin: 20px 0;
+    }
+
+    .question-nav {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background-color: rgba(255, 255, 255, 0.95);
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 1000;
+      max-height: 80vh;
+      overflow-y: auto;
+      border: 2px solid #6c63ff;
+      display: none;
+    }
+
+    .nav-title {
+      font-weight: bold;
+      color: #6c63ff;
+      margin-bottom: 10px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .nav-btn {
+      display: inline-block;
+      margin: 3px;
+      padding: 8px 12px;
+      background-color: #e9ecef;
+      color: #495057;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      min-width: 35px;
+      transition: all 0.2s ease;
+    }
+
+    .nav-btn:hover {
+      background-color: #6c63ff;
+      color: white;
+      transform: translateY(-1px);
+    }
+
+    .nav-btn.answered {
+      background-color: #28a745;
+      color: white;
+    }
+
+    .nav-btn.current {
+      background-color: #ffc107;
+      color: #212529;
+      font-weight: bold;
+    }
+
+    .start-fullscreen {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(135deg, #6c63ff, #5a54cc);
+      color: white;
+      padding: 20px 40px;
+      border: none;
+      border-radius: 15px;
+      font-size: 1.8rem;
+      cursor: pointer;
+      z-index: 1001;
+      box-shadow: 0 8px 25px rgba(108, 99, 255, 0.3);
+      transition: all 0.3s ease;
+    }
+
+    .start-fullscreen:hover {
+      transform: translate(-50%, -50%) translateY(-2px);
+      box-shadow: 0 12px 35px rgba(108, 99, 255, 0.4);
+    }
+
+    .quiz-content {
+      display: none;
+    }
+  </style>
+</head>
+<body th:data-user-id="${idUser}" th:data-exam-id="${idExam}" th:data-user-name="${username}" th:data-exam-name="${nameExam}">
+<!-- Cảnh báo vi phạm -->
+<div id="fullscreenWarning" class="fullscreen-warning">
+  <div class="warning-content">
+    <h2><i class="bi bi-exclamation-triangle-fill"></i> CẢNH BÁO!</h2>
+    <p id="warningMessage">Phát hiện vi phạm quy định thi!</p>
+    <p>Bài thi sẽ tự động nộp sau:</p>
+    <div class="countdown" id="warningCountdown">5</div>
+    <p><strong>Nhấn Alt+Tab hoặc F11 để quay lại ngay!</strong></p>
+  </div>
+</div>
+
+<!-- Thanh điều hướng câu hỏi -->
+<div id="questionNav" class="question-nav">
+  <div class="nav-title">Danh sách câu hỏi</div>
+  <div id="navButtons"></div>
+</div>
+
+<!-- Nút bắt đầu bài thi -->
+<button id="startFullscreen" class="start-fullscreen">
+  <i class="bi bi-fullscreen"></i> Bắt đầu bài kiểm tra
+</button>
+
+<!-- Nội dung bài thi -->
+<div class="container mt-5 quiz-content" id="quizContent">
+  <div class="row">
+    <div class="col-8 mx-auto">
+      <h1 class="quiz-title text-center mb-4" th:text="${nameExam} ?: 'Làm Bài Trắc Nghiệm'">Làm Bài Trắc Nghiệm</h1>
+      <div class="quiz-container">
+        <div class="text-center mb-4">
+          <div id="timer">20:00</div>
+          <small class="text-muted">
+            <i class="bi bi-shield-check"></i> Chế độ bảo mật đã bật
+          </small>
+        </div>
+
+        <!-- Danh sách câu hỏi từ Thymeleaf -->
+        <div th:each="question, stat : ${questions}" class="card mb-3 question-card" th:attr="data-question-id=${question.idQuestion}, data-question-number=${stat.index + 1}">
+          <div class="card-body">
+            <h5 class="card-title">
+              <span class="badge bg-primary me-2" th:text="'Câu ' + ${stat.index + 1}">Câu 1</span>
+              <span th:text="${question.question}">Câu hỏi</span>
+            </h5>
+            <div class="row">
+              <div class="col-md-6 mb-2">
+                <button class="btn btn-outline-primary btn-answer w-100" th:attr="data-answer=${question.answer1}" th:text="'A: ' + ${question.answer1}"></button>
+              </div>
+              <div class="col-md-6 mb-2">
+                <button class="btn btn-outline-primary btn-answer w-100" th:attr="data-answer=${question.answer2}" th:text="'B: ' + ${question.answer2}"></button>
+              </div>
+              <div class="col-md-6 mb-2">
+                <button class="btn btn-outline-primary btn-answer w-100" th:attr="data-answer=${question.answer3}" th:text="'C: ' + ${question.answer3}"></button>
+              </div>
+              <div class="col-md-6 mb-2">
+                <button class="btn btn-outline-primary btn-answer w-100" th:attr="data-answer=${question.answer4}" th:text="'D: ' + ${question.answer4}"></button>
+              </div>
+            </div>
+            <div class="result-text" style="display:none;"></div>
+            <input type="hidden" class="correct-answer" th:value="${question.correctAnswer}">
+          </div>
+        </div>
+
+        <!-- Nút nộp bài -->
+        <div class="text-center mt-4">
+          <button class="btn btn-success px-5 py-2" onclick="submitQuiz()">
+            <i class="bi bi-send-fill me-2"></i>Nộp bài
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Biến toàn cục
+  let timeLeft = 20 * 60; // Thời gian thi: 20 phút
+  let isAltPressed = false; // Theo dõi trạng thái phím Alt
+  let isQuizStarted = false; // Trạng thái bắt đầu bài thi
+  let isQuizSubmitted = false; // Trạng thái nộp bài
+  let warningTimer = null; // Timer cho cảnh báo
+  let countdownValue = 5; // Thời gian đếm ngược 5 giây
+  let isWarningActive = false; // Ngăn nhiều cảnh báo đồng thời
+  let wakeLock = null; // Khóa màn hình
+  const selectedAnswers = {}; // Lưu câu trả lời của người dùng
+
+  // Tham chiếu DOM
+  const timerDisplay = document.getElementById('timer');
+  const fullscreenWarning = document.getElementById('fullscreenWarning');
+  const warningMessage = document.getElementById('warningMessage');
+  const warningCountdown = document.getElementById('warningCountdown');
+  const quizContent = document.getElementById('quizContent');
+  const startFullscreenButton = document.getElementById('startFullscreen');
+  const questionNav = document.getElementById('questionNav');
+  const navButtons = document.getElementById('navButtons');
+
+  // Hàm yêu cầu chế độ toàn màn hình
+  function requestFullscreen() {
+    const element = document.documentElement;
+    return (element.requestFullscreen?.() ||
+            element.webkitRequestFullscreen?.() ||
+            element.mozRequestFullScreen?.() ||
+            element.msRequestFullscreen?.() ||
+            Promise.reject('Fullscreen không được hỗ trợ'));
+  }
+
+  // Kiểm tra trạng thái toàn màn hình
+  function isFullscreen() {
+    return !!(document.fullscreenElement ||
+            document.webkitFullscreenElement ||
+            document.mozFullScreenElement ||
+            document.msFullscreenElement);
+  }
+
+  // Hiển thị cảnh báo vi phạm với đếm ngược 5 giây
+  function showWarning(message) {
+    if (isQuizSubmitted || !isQuizStarted || isWarningActive) return;
+    isWarningActive = true;
+
+    // Trừ 30 giây thời gian thi
+    penalizeTime(30);
+    // Ghi log và thông báo giám khảo
+    logViolation(message);
+    notifyProctor(message);
+
+    // Hiển thị cảnh báo
+    warningMessage.textContent = message;
+    fullscreenWarning.style.display = 'flex';
+    countdownValue = 5;
+    warningCountdown.textContent = countdownValue;
+
+    // Xóa timer cũ nếu có
+    if (warningTimer) clearInterval(warningTimer);
+
+    // Đếm ngược 5 giây
+    warningTimer = setInterval(() => {
+      countdownValue--;
+      warningCountdown.textContent = countdownValue;
+      if (countdownValue <= 0) {
+        clearInterval(warningTimer);
+        isWarningActive = false;
+        submitQuiz(true, message);
+      }
+    }, 1000);
+  }
+
+  // Ẩn cảnh báo
+  function hideWarning() {
+    fullscreenWarning.style.display = 'none';
+    if (warningTimer) {
+      clearInterval(warningTimer);
+      warningTimer = null;
+    }
+    isWarningActive = false;
+  }
+
+  // Ghi log vi phạm lên server
+  function logViolation(message) {
+    const userId = document.body.getAttribute('data-user-id');
+    const examId = document.body.getAttribute('data-exam-id');
+    const timestamp = new Date().toISOString();
+    fetch('/log-violation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, examId, violation: message, timestamp })
+    }).catch(err => console.error('Lỗi ghi log:', err));
+  }
+
+  // Thông báo giám khảo qua server
+  function notifyProctor(message) {
+    const userId = document.body.getAttribute('data-user-id');
+    const examId = document.body.getAttribute('data-exam-id');
+    const timestamp = new Date().toISOString();
+    fetch('/notify-proctor', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, examId, violation: message, timestamp })
+    }).catch(err => console.error('Lỗi thông báo giám khảo:', err));
+  }
+
+  // Trừ thời gian thi (30 giây)
+  function penalizeTime(seconds) {
+    timeLeft = Math.max(0, timeLeft - seconds);
+  }
+
+  // Phát hiện thoát toàn màn hình
+  function handleFullscreenChange() {
+    if (!isQuizStarted || isQuizSubmitted) return;
+    setTimeout(() => {
+      if (!isFullscreen()) {
+        showWarning('Thoát khỏi chế độ toàn màn hình');
+      } else {
+        hideWarning();
+      }
+    }, 100);
+  }
+
+  // Phát hiện chuyển tab/ứng dụng
+  function handleVisibilityChange() {
+    if (!isQuizStarted || isQuizSubmitted) return;
+    if (document.hidden) {
+      showWarning('Chuyển sang tab/ứng dụng khác');
+    } else {
+      hideWarning();
+    }
+  }
+
+  // Sự kiện bảo mật
+  document.addEventListener('fullscreenchange', handleFullscreenChange);
+  document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+  document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+  document.addEventListener('msfullscreenchange', handleFullscreenChange);
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+
+  // Phát hiện mất tiêu điểm (có thể do Alt+Tab)
+  window.addEventListener('blur', () => {
+    if (isQuizStarted && !isQuizSubmitted) {
+      showWarning('Cửa sổ thi mất tiêu điểm (có thể Alt+Tab)');
+    }
+  });
+
+  window.addEventListener('focus', () => {
+    if (isQuizStarted && !isQuizSubmitted) {
+      hideWarning();
+    }
+  });
+
+  // Chặn phím tắt và phát hiện Alt+Tab
+  document.addEventListener('keydown', (e) => {
+    if (!isQuizStarted || isQuizSubmitted) return;
+
+    if (e.key === 'Alt') {
+      isAltPressed = true;
+    } else if (e.key === 'Tab' && isAltPressed) {
+      e.preventDefault();
+      showWarning('Sử dụng Alt+Tab');
+    } else if (e.key === 'Meta' || e.key === 'Control') {
+      e.preventDefault();
+      showWarning('Sử dụng phím Windows hoặc Ctrl');
+    } else if (e.key === 'PrintScreen') {
+      showWarning('Cố gắng chụp ảnh màn hình');
+    } else if (e.key === 'F12' ||
+            (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J')) ||
+            (e.ctrlKey && e.key === 'U')) {
+      e.preventDefault();
+      showWarning('Cố gắng mở Developer Tools');
+    } else if (e.key === 'F11') {
+      e.preventDefault();
+      if (!isFullscreen()) {
+        requestFullscreen().then(hideWarning).catch(() => {
+          showWarning('Không thể vào chế độ toàn màn hình');
+        });
+      }
+    }
+  });
+
+  document.addEventListener('keyup', (e) => {
+    if (e.key === 'Alt') isAltPressed = false;
+  });
+
+  // Chặn chuột phải
+  document.addEventListener('contextmenu', (e) => {
+    if (isQuizStarted && !isQuizSubmitted) {
+      e.preventDefault();
+      showWarning('Nhấn chuột phải');
+    }
+  });
+
+  // Phát hiện mở tab mới
+  const channel = new BroadcastChannel('quiz_channel');
+  channel.onmessage = (event) => {
+    if (event.data === 'new_tab_opened' && isQuizStarted && !isQuizSubmitted) {
+      showWarning('Phát hiện mở tab mới');
+    }
+  };
+  window.addEventListener('load', () => {
+    channel.postMessage('new_tab_opened');
+  });
+
+  // Phát hiện sử dụng nhiều màn hình
+  window.addEventListener('resize', () => {
+    if (isQuizStarted && !isQuizSubmitted) {
+      const screenCount = window.screen.availWidth / window.innerWidth;
+      if (screenCount > 1) {
+        showWarning('Phát hiện sử dụng nhiều màn hình');
+      }
+    }
+  });
+
+  // Bộ đếm thời gian thi
+  function startTimer() {
+    const timerInterval = setInterval(() => {
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      timerDisplay.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+      if (timeLeft <= 300) timerDisplay.style.color = '#dc3545';
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        submitQuiz(true, 'Hết thời gian');
+      }
+      timeLeft--;
+    }, 1000);
+  }
+
+  // Tạo thanh điều hướng câu hỏi
+  function generateQuestionNav() {
+    const questionCards = document.querySelectorAll('.question-card');
+    navButtons.innerHTML = '';
+    questionCards.forEach((card, index) => {
+      const button = document.createElement('button');
+      button.className = 'nav-btn';
+      button.textContent = index + 1;
+      button.setAttribute('data-question', index + 1);
+      button.addEventListener('click', () => {
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('current'));
+        button.classList.add('current');
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+      navButtons.appendChild(button);
+    });
+    questionNav.style.display = 'block';
+  }
+
+  // Cập nhật trạng thái điều hướng khi chọn đáp án
+  function updateNavStatus(questionNumber) {
+    const navBtn = document.querySelector(`[data-question="${questionNumber}"]`);
+    if (navBtn) navBtn.classList.add('answered');
+  }
+
+  // Xử lý chọn đáp án
+  document.querySelectorAll('.btn-answer').forEach(button => {
+    button.addEventListener('click', function() {
+      const questionCard = this.closest('.question-card');
+      const questionId = questionCard.getAttribute('data-question-id');
+      const questionNumber = questionCard.getAttribute('data-question-number');
+      questionCard.querySelectorAll('.btn-answer').forEach(btn => btn.classList.remove('selected'));
+      this.classList.add('selected');
+      selectedAnswers[questionId] = this.getAttribute('data-answer');
+      updateNavStatus(questionNumber);
+    });
+  });
+
+  // Nộp bài thi
+  function submitQuiz(isTimeout = false, reason = '') {
+    if (isQuizSubmitted) return;
+    isQuizSubmitted = true;
+    timeLeft = 0;
+    if (warningTimer) clearInterval(warningTimer);
+    hideWarning();
+
+    // Thu thập dữ liệu câu trả lời
+    const answersData = [];
+    document.querySelectorAll('.question-card').forEach(questionCard => {
+      const questionId = questionCard.getAttribute('data-question-id');
+      const correctAnswer = questionCard.querySelector('.correct-answer').value;
+      answersData.push({
+        questionId: parseInt(questionId),
+        selectedAnswer: selectedAnswers[questionId] || null,
+        correctAnswer
+      });
+    });
+
+    // Chuẩn bị dữ liệu gửi server
+    const userId = document.body.getAttribute('data-user-id');
+    const examId = document.body.getAttribute('data-exam-id');
+    const userName = encodeURIComponent(document.body.getAttribute('data-user-name'));
+    const examName = encodeURIComponent(document.body.getAttribute('data-exam-name') || 'Unknown Exam');
+    const answersParam = encodeURIComponent(JSON.stringify(answersData));
+    const submitReason = reason ? `&reason=${encodeURIComponent(reason)}` : '';
+    const url = `/submit-exam?userId=${userId}&examId=${examId}&userName=${userName}&examName=${examName}&answers=${answersParam}&timeout=${isTimeout}${submitReason}`;
+
+    // Xác nhận nộp bài
+    if (isTimeout || confirm('Bạn có muốn nộp bài không?')) {
+      if (isFullscreen()) {
+        document.exitFullscreen().finally(() => {
+          window.location.href = url;
+        });
+      } else {
+        window.location.href = url;
+      }
+    } else {
+      isQuizSubmitted = false;
+    }
+  }
+
+  // Khóa màn hình để ngăn tiết kiệm năng lượng
+  async function requestWakeLock() {
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      console.log('Đã bật khóa màn hình');
+    } catch (err) {
+      console.error('Lỗi khóa màn hình:', err);
+    }
+  }
+
+  // Bắt đầu bài thi
+  function startQuiz() {
+    if (!confirm(
+            '🔒 BÀI THI AN TOÀN\n\n' +
+            'Bài thi sẽ chuyển sang chế độ toàn màn hình.\n\n' +
+            '⚠️ LƯU Ý QUAN TRỌNG:\n' +
+            '• Không được thoát khỏi chế độ toàn màn hình\n' +
+            '• Không được Alt+Tab chuyển ứng dụng\n' +
+            '• Không được nhấn F12 hoặc mở Developer Tools\n' +
+            '• Mỗi vi phạm sẽ bị trừ 30 giây và tự động nộp bài sau 5 giây\n\n' +
+            'Bạn đã sẵn sàng?'
+    )) return;
+
+    requestFullscreen().then(() => {
+      startFullscreenButton.style.display = 'none';
+      quizContent.style.display = 'block';
+      isQuizStarted = true;
+      startTimer();
+      generateQuestionNav();
+      requestWakeLock();
+      const firstQuestion = document.querySelector('.question-card');
+      if (firstQuestion) firstQuestion.scrollIntoView({ behavior: 'smooth' });
+    }).catch(err => {
+      alert('Không thể vào chế độ toàn màn hình. Vui lòng thử lại.');
+      console.error('Lỗi toàn màn hình:', err);
+    });
+  }
+
+  // Khởi tạo
+  window.addEventListener('load', () => {
+    startFullscreenButton.addEventListener('click', startQuiz);
+  });
+
+  // Ngăn rời trang khi đang thi
+  window.addEventListener('beforeunload', (e) => {
+    if (isQuizStarted && !isQuizSubmitted) {
+      e.preventDefault();
+      e.returnValue = 'Bạn có chắc muốn rời khỏi? Bài thi sẽ không được lưu.';
+      return e.returnValue;
+    }
+  });
+</script>
+</body>
+</html>

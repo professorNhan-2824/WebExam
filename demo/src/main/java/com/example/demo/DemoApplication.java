@@ -1,13 +1,14 @@
-package com.webquizz.webquizz;
+package com.example.demo;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class WebquizzApplication {
+public class DemoApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(WebquizzApplication.class, args);
-			}
+		SpringApplication.run(DemoApplication.class, args);
+	
+	}
 
 }

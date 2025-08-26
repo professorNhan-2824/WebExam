@@ -122,12 +122,11 @@
         <div class="exam-icon">
           <i class="bi bi-pencil-square"></i>
         </div>
-        <h4 class="exam-name" th:text="'ID BỘ: ' + ${exam.exam}">Tên bài kiểm tra</h4>
+        <h4 class="exam-name" th:text="${exam.examName} ?: 'Bài kiểm tra ' + ${exam.exam}">Tên bài kiểm tra</h4>
 
-
-        <!-- Hiển thị ID Bộ Thi -->
         <div class="exam-details">
-<!--          <p><strong>ID Bộ Thi:</strong> <span th:text="${exam.exam}">ID Bộ Thi</span></p>-->
+          <!-- Hiển thị ID Bộ Thi -->
+          <p><strong>ID Bộ Thi:</strong> <span th:text="${exam.exam}">ID Bộ Thi</span></p>
 
           <!-- Hiển thị thời gian làm bài kiểm tra -->
           <p class="mb-1">
@@ -138,12 +137,12 @@
           <!-- Hiển thị kết quả -->
           <p class="exam-result">
             <i class="bi bi-bar-chart me-2"></i>
-            <strong>Điểm:</strong> <span th:text="${exam.ketqua}">Kết quả</span>
+            <strong>Điểm:</strong> <span th:text="${exam.ketqua} + '%'">Kết quả</span>
           </p>
         </div>
 
         <!-- Dùng th:href để chuyển đến trang làm lại bài kiểm tra -->
-        <a th:href="@{/questions/{idExam}(idExam=${exam.exam})}"
+        <a th:href="@{/questions/{idExam}(idExam=${exam.exam},nameExam=${exam.examName})}"
            class="btn btn-retry text-white w-100"
            onclick="return confirmRetry()">Làm lại <i class="bi bi-arrow-right ms-2"></i></a>
       </div>
@@ -151,10 +150,87 @@
   </div>
 </section>
 
-<!-- Footer section -->
+<section class="info_section layout_padding">
+  <div class="container">
+    <div class="info_contact">
+      <div class="row">
+        <div class="col-md-4">
+          <a href="">
+            <img src="location-white.png" alt="">
+            <span>
+                Passages of Lorem Ipsum available
+              </span>
+          </a>
+        </div>
+        <div class="col-md-4">
+          <a href="">
+            <img src="telephone-white.png" alt="">
+            <span>
+                Call : +012334567890
+              </span>
+          </a>
+        </div>
+        <div class="col-md-4">
+          <a href="">
+            <img src="envelope-white.png" alt="">
+            <span>
+                demo@gmail.com
+              </span>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-8 col-lg-9">
+        <div class="info_form">
+          <form action="">
+            <input type="text" placeholder="Enter your email">
+            <button>
+              subscribe
+            </button>
+          </form>
+        </div>
+      </div>
+      <div class="col-md-4 col-lg-3">
+        <div class="info_social">
+          <div>
+            <a href="">
+              <img src="fb.png" alt="">
+            </a>
+          </div>
+          <div>
+            <a href="">
+              <img src="twitter.png" alt="">
+            </a>
+          </div>
+          <div>
+            <a href="">
+              <img src="linkedin.png" alt="">
+            </a>
+          </div>
+          <div>
+            <a href="">
+              <img src="instagram.png" alt="">
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- end info section -->
+<!-- Footer Section -->
 <footer class="container-fluid footer_section">
   <div class="container">
-    <!-- Original footer content -->
+    <div class="row">
+      <div class="col-lg-7 col-md-9 mx-auto">
+        <p>
+          &copy; 2019 All Rights Reserved By
+          <a href="https://html.design/">Free Html Templates</a>
+        </p>
+      </div>
+    </div>
   </div>
 </footer>
 
@@ -165,13 +241,8 @@
   // Chức năng xác nhận làm lại bài kiểm tra
   function confirmRetry() {
     // Hiển thị hộp thoại xác nhận
-    const confirmAction = confirm("Bạn có muốn làm lại bài kiểm tra? Lưu ý: Điểm của bạn có thể bị thay đổi.");
-
-    if (confirmAction) {
-      return true; // Nếu đồng ý, cho phép chuyển hướng đến trang làm lại bài kiểm tra
-    } else {
-      return false; // Nếu không đồng ý, không chuyển hướng
-    }
+    const confirmAction = confirm("Bạn có muốn làm lại bài kiểm tra? Lưu ý: Điểm của bạn không thể thay đổi.");
+    return confirmAction;
   }
 </script>
 
