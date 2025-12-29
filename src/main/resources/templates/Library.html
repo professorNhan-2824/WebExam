@@ -19,6 +19,43 @@
   <link rel="stylesheet" href="style.css">
   <!-- responsive style -->
   <link href="responsive.css" rel="stylesheet" />
+  <style>
+    .icon-container {
+      background-color: #4b208c;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .data-card {
+      background-color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 15px;
+    }
+    .test-name {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+    .test-date {
+      font-size: 0.9rem;
+      color: #6c757d;
+    }
+    .btn-toggle {
+      width: 100%;
+      font-weight: bold;
+    }
+    .btn-toggle.active {
+      background-color: #28a745 !important;
+      color: white !important;
+    }
+    .btn-toggle.inactive {
+      background-color: #6c757d !important;
+      color: white !important;
+    }
+  </style>
 </head>
 
 <body class="sub_page">
@@ -85,6 +122,12 @@
                    style="color:white; text-decoration: none;">
                   Danh sách
                 </a>
+              </button>
+              <button type="button" class="btn btn-toggle"
+                      th:class="${exam.active} ? 'active' : 'inactive'"
+                      th:text="${exam.active} ? 'On' : 'Off'"
+                      th:attr="data-exam-id=${exam.idExam}, data-active=${exam.active}"
+                      onclick="toggleExamStatus(this)">
               </button>
             </div>
 
@@ -193,6 +236,58 @@
 
   <script src="jquery-3.4.1.min.js"></script>
   <script src="bootstrap.js"></script>
+  <script src="/js/jquery-3.4.1.min.js"></script>
+  <script src="/js/bootstrap.js"></script>
+  <script>
+    function toggleExamStatus(button) {
+      const examId = button.getAttribute('data-exam-id');
+      const currentActive = button.getAttribute('data-active') === 'true';
+      const newActive = !currentActive;
+
+      // Xác nhận trước khi thay đổi
+      if (!confirm(`Bạn có muốn chuyển trạng thái bài thi sang ${newActive ? 'On' : 'Off'} không?`)) {
+        return;
+      }
+
+      // Cập nhật giao diện nút
+      button.textContent = newActive ? 'On' : 'Off';
+      button.classList.remove(currentActive ? 'active' : 'inactive');
+      button.classList.add(newActive ? 'active' : 'inactive');
+      button.setAttribute('data-active', newActive);
+
+      // Gửi yêu cầu đến backend
+      fetch('/update-exam-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          examId: examId,
+          active: newActive
+        })
+      })
+              .then(response => response.json())
+              .then(data => {
+                if (data.success) {
+                  alert('Cập nhật trạng thái bài thi thành công!');
+                } else {
+                  // Hoàn tác nếu thất bại
+                  button.textContent = currentActive ? 'On' : 'Off';
+                  button.classList.remove(newActive ? 'active' : 'inactive');
+                  button.classList.add(currentActive ? 'active' : 'inactive');
+                  button.setAttribute('data-active', currentActive);
+                  alert('Cập nhật trạng thái thất bại: ' + (data.message || 'Lỗi không xác định'));
+                }
+              })
+              .catch(error => {
+                // Hoàn tác nếu lỗi
+                button.textContent = currentActive ? 'On' : 'Off';
+                button.classList.remove(newActive ? 'active' : 'inactive');
+                button.classList.add(currentActive ? 'active' : 'inactive');
+                button.setAttribute('data-active', currentActive);
+                console.error('Lỗi:', error);
+                alert('Có lỗi xảy ra khi cập nhật trạng thái.');
+              });
+    }
+  </script>
 
 
 </body>

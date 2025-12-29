@@ -49,7 +49,16 @@ public class examServiceIPM {
 
     public void deleteByIdExam(Integer id) {
         exampleRepository.deleteById(id);
-
-
     }
+    public exam save(exam exam) {
+        return exampleRepository.save(exam);
+    }
+
+    // Thêm phương thức để cập nhật trạng thái active
+    public exam updateExamStatus(Integer examId, Boolean active) {
+        exam exam = findExamById(examId);
+        exam.setActive(active);
+        return exampleRepository.save(exam);
+    }
+
 }

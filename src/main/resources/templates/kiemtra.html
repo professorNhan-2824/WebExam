@@ -183,7 +183,7 @@
             <span th:text="${exam.idExam}">ID</span>
           </p>
         </div>
-        <a th:href="@{/questions/{idExam}(idExam=${exam.idExam})}" class="btn btn-check text-white w-100">
+        <a th:href="@{/online/{idExam}(idExam=${exam.idExam},nameExam=${exam.nameExam})}" class="btn btn-check text-white w-100">
           Bắt đầu <i class="bi bi-arrow-right ms-2"></i>
         </a>
       </div>
