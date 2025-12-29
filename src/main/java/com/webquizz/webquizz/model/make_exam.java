@@ -15,6 +15,8 @@ public class make_exam {
 
     @Column(name = "id_user")
     private String user; // Người dùng tham gia kỳ thi
+    @Column(name = "id_name")
+    private String userName; // Kỳ thi mà người dùng thực hiện
 
     @Column(name = "id_name")
     private String userName; // Tên người dùng
@@ -51,6 +53,9 @@ public class make_exam {
 
     public void setUser(String user) {
         this.user = user;
+    }
+    public String getUserName() {
+        return userName;
     }
 
     public String getUserName() {
